@@ -126,9 +126,7 @@ trait CommonStartScriptGenerator {
     val scriptNameWithSuffix = mainScriptName(config)
     val script = targetDir / scriptTargetFolder / scriptNameWithSuffix
 
-    IO.write(script, scriptContent)
-    // TODO - Better control over this!
-    script.setExecutable(executableBitValue)
+    writeScriptAndSetExecutable(script, scriptContent)
     script -> s"$scriptTargetFolder/$scriptNameWithSuffix"
   }
 
@@ -155,9 +153,25 @@ trait CommonStartScriptGenerator {
         val replacements = Seq("startScript" -> executableScriptName, "qualifiedClassName" -> qualifiedClassName)
         val scriptContent = TemplateWriter.generateScript(forwarderTemplate, replacements, eol, keySurround)
 
-        IO.write(file, scriptContent)
-        file.setExecutable(executableBitValue)
+        writeScriptAndSetExecutable(file, scriptContent)
         file -> s"$scriptTargetFolder/$scriptName"
+    }
+  }
+
+  private[this] def writeScriptAndSetExecutable(
+    script: File,
+    scriptContent: String
+  ): Unit = {
+    val scriptChanged = if (script.exists()) {
+      IO.read(script) != scriptContent
+    } else true
+
+    if (scriptChanged) {
+      IO.write(script, scriptContent)
+    }
+    if (!script.canExecute) {
+      // TODO - Better control over this!
+      script.setExecutable(executableBitValue)
     }
   }
 }
